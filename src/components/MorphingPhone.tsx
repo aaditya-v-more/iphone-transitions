@@ -27,21 +27,38 @@ const useNum = (progress: MV, get: (p: PhoneSpec) => number) =>
 const useCol = (progress: MV, get: (p: PhoneSpec) => string) =>
   useTransform(progress, STOPS, expand(PHONES.map(get)));
 
+/** Perceptual luminance of a #rrggbb color, 0..1 — polished chrome glints
+    hard, matte black barely at all. */
+const lum = (hex: string) => {
+  const n = parseInt(hex.slice(1), 16);
+  return (((n >> 16) & 255) * 0.299 + ((n >> 8) & 255) * 0.587 + (n & 255) * 0.114) / 255;
+};
+
 /* Simple-icons Apple logo (viewBox 0 0 24 24). */
 const APPLE_PATH =
   "M12.152 6.896c-.948 0-2.415-1.078-3.96-1.04-2.04.027-3.91 1.183-4.961 3.014-2.117 3.675-.546 9.103 1.519 12.09 1.013 1.454 2.208 3.09 3.792 3.039 1.52-.065 2.09-.987 3.935-.987 1.831 0 2.35.987 3.96.948 1.637-.026 2.676-1.48 3.676-2.948 1.156-1.688 1.636-3.325 1.662-3.415-.039-.013-3.182-1.221-3.22-4.857-.026-3.04 2.48-4.494 2.597-4.559-1.429-2.09-3.623-2.324-4.39-2.376-2-.156-3.675 1.09-4.61 1.09zM15.53 3.83c.843-1.012 1.4-2.427 1.245-3.83-1.207.052-2.662.805-3.532 1.818-.78.896-1.454 2.338-1.273 3.714 1.338.104 2.715-.688 3.559-1.701";
 
+/** A camera lens as a physical optic stack: metal rim → barrel → glass
+    element → iris ring → pupil, with a key-light specular and a purple
+    coating flare. */
 function Lens({ x, y, r, o }: { x: MV; y: MV; r: MV; o: MV }) {
-  const glass = useTransform(r, (v) => v * 0.64);
-  const pupil = useTransform(r, (v) => v * 0.3);
-  const spec = useTransform(r, (v) => v * 0.13);
-  const specOff = useTransform(r, (v) => -v * 0.3);
+  const barrel = useTransform(r, (v) => v * 0.82);
+  const glass = useTransform(r, (v) => v * 0.6);
+  const iris = useTransform(r, (v) => v * 0.38);
+  const pupil = useTransform(r, (v) => v * 0.2);
+  const spec = useTransform(r, (v) => v * 0.15);
+  const specOff = useTransform(r, (v) => -v * 0.32);
+  const flare = useTransform(r, (v) => v * 0.09);
+  const flareOff = useTransform(r, (v) => v * 0.28);
   return (
     <motion.g style={{ x, y, opacity: o }}>
-      <motion.circle style={{ r }} fill="#0e0f13" stroke="rgba(255,255,255,0.14)" strokeWidth={1.5} />
+      <motion.circle style={{ r }} fill="url(#lens-rim)" stroke="rgba(255,255,255,0.22)" strokeWidth={1} />
+      <motion.circle style={{ r: barrel }} fill="#08090d" />
       <motion.circle style={{ r: glass }} fill="url(#lens-glass)" />
-      <motion.circle style={{ r: pupil }} fill="#0a1730" />
-      <motion.circle style={{ cx: specOff, cy: specOff, r: spec }} fill="rgba(255,255,255,0.45)" />
+      <motion.circle style={{ r: iris }} fill="#040916" stroke="rgba(96,140,230,0.38)" strokeWidth={1.2} />
+      <motion.circle style={{ r: pupil }} fill="#020409" />
+      <motion.circle style={{ cx: specOff, cy: specOff, r: spec }} fill="rgba(255,255,255,0.55)" />
+      <motion.circle style={{ cx: flareOff, cy: flareOff, r: flare }} fill="rgba(150,110,255,0.38)" />
     </motion.g>
   );
 }
@@ -78,6 +95,37 @@ function useBody(progress: MV, cx: number) {
   };
 }
 
+/** Lighting overlays shared by both views: vertical key light, horizontal
+    cylindrical falloff with rim lights, and a chamfer glint on the top edge. */
+function BodyLight({
+  bx,
+  by,
+  bw,
+  bh,
+  br,
+  progress,
+  cx,
+}: {
+  bx: MV;
+  by: MV;
+  bw: MV;
+  bh: MV;
+  br: MV;
+  progress: MV;
+  cx: number;
+}) {
+  const hlX = useNum(progress, (p) => bodyLeftAt(p, cx) + p.body.r * 0.7);
+  const hlW = useNum(progress, (p) => p.body.w - p.body.r * 1.4);
+  const hlY = useNum(progress, (p) => bodyTop(p) + 1.5);
+  return (
+    <>
+      <motion.rect style={{ x: bx, y: by, width: bw, height: bh, rx: br }} fill="url(#body-light)" />
+      <motion.rect style={{ x: bx, y: by, width: bw, height: bh, rx: br }} fill="url(#edge-shade)" />
+      <motion.rect style={{ x: hlX, y: hlY, width: hlW }} height={2} rx={1} fill="rgba(255,255,255,0.28)" />
+    </>
+  );
+}
+
 /* ------------------------------------------------------------------ */
 /* Back view: cameras, logo, wordmark — buttons mirrored (seen from behind,
    volume sits on the right, power on the left).                        */
@@ -89,6 +137,7 @@ function BackView({ progress }: { progress: MV }) {
   const bodyFill = useCol(progress, (p) => p.body.color);
   const bandColor = useCol(progress, (p) => p.band.color);
   const bandW = useNum(progress, (p) => p.band.w);
+  const bandGlintO = useNum(progress, (p) => Math.min(1, p.band.w / 5) * lum(p.band.color) * 0.9);
   const clipRef = useClipSync(bx, by, bw, bh, br);
 
   /* Strips (iPhone 1 plastic bottom, iPhone 5 glass top/bottom) */
@@ -175,31 +224,42 @@ function BackView({ progress }: { progress: MV }) {
         filter="url(#soft-shadow)"
       />
 
-      {/* Era-specific surface details, clipped to the body */}
+      {/* Era-specific surface details + lighting, clipped to the body */}
       <g clipPath="url(#body-clip-back)">
         <motion.rect style={{ x: bx, y: by, width: bw, height: topStripH, fill: topStripC, opacity: topStripO }} />
         <motion.rect style={{ x: bx, y: botStripY, width: bw, height: botStripH, fill: botStripC, opacity: botStripO }} />
         <motion.rect style={{ x: bx, y: antY1, width: bw, fill: antC, opacity: antO }} height={3} />
         <motion.rect style={{ x: bx, y: antY2, width: bw, fill: antC, opacity: antO }} height={3} />
         <motion.rect style={{ x: bx, y: by, width: bw, height: bh, rx: br }} fill="url(#sheen)" />
-        <motion.rect style={{ x: bx, y: by, width: bw, height: bh, rx: br }} fill="url(#edge-shade)" />
+        <BodyLight bx={bx} by={by} bw={bw} bh={bh} br={br} progress={progress} cx={cx} />
       </g>
       <clipPath id="body-clip-back">
         <rect ref={clipRef} />
       </clipPath>
 
-      {/* Steel / titanium band */}
+      {/* Steel / titanium band: base color + metallic glint pass */}
       <motion.rect
         style={{ x: bx, y: by, width: bw, height: bh, rx: br, stroke: bandColor, strokeWidth: bandW }}
         fill="none"
       />
+      <motion.rect
+        style={{ x: bx, y: by, width: bw, height: bh, rx: br, strokeWidth: bandW, opacity: bandGlintO }}
+        stroke="url(#band-metal)"
+        fill="none"
+      />
 
-      {/* Camera module / plateau */}
+      {/* Camera module / plateau, with its own key light */}
       <motion.rect
         style={{ x: mx, y: my, width: mw, height: mh, rx: mr, fill: mc, opacity: mo }}
         stroke="rgba(0,0,0,0.18)"
         strokeWidth={1.5}
         filter="url(#module-shadow)"
+      />
+      <motion.rect
+        style={{ x: mx, y: my, width: mw, height: mh, rx: mr, opacity: mo }}
+        fill="url(#body-light)"
+        stroke="rgba(255,255,255,0.07)"
+        strokeWidth={1}
       />
 
       {/* Lenses, flash, sensor */}
@@ -243,6 +303,7 @@ function FrontView({ progress }: { progress: MV }) {
   const faceC = useCol(progress, (p) => p.front.face);
   const frameC = useCol(progress, (p) => p.front.frame.color);
   const frameW = useNum(progress, (p) => p.front.frame.w);
+  const frameGlintO = useNum(progress, (p) => lum(p.front.frame.color) * 0.5);
 
   /* Screen */
   const screenW = (p: PhoneSpec) => p.front.screen.wF * p.body.w;
@@ -327,25 +388,41 @@ function FrontView({ progress }: { progress: MV }) {
       <motion.rect style={{ x: volX, y: vol2Y, fill: btnC }} width={7} height={46} rx={3.5} />
       <motion.rect style={{ x: ccX, y: ccY, height: ccH, fill: btnC, opacity: ccO }} width={7} rx={3.5} />
 
-      {/* Face + rim */}
+      {/* Face + lighting + rim (base color, then a metallic glint pass) */}
       <motion.rect
         style={{ x: bx, y: by, width: bw, height: bh, rx: br, fill: faceC }}
         filter="url(#soft-shadow)"
       />
-      <motion.rect style={{ x: bx, y: by, width: bw, height: bh, rx: br }} fill="url(#edge-shade)" />
+      <BodyLight bx={bx} by={by} bw={bw} bh={bh} br={br} progress={progress} cx={cx} />
       <motion.rect
         style={{ x: bx, y: by, width: bw, height: bh, rx: br, stroke: frameC, strokeWidth: frameW }}
         fill="none"
       />
+      <motion.rect
+        style={{ x: bx, y: by, width: bw, height: bh, rx: br, strokeWidth: frameW, opacity: frameGlintO }}
+        stroke="url(#band-metal)"
+        fill="none"
+      />
 
-      {/* Screen: dark glass + era tint + diagonal sheen */}
+      {/* Screen: deep glass + era tint + diagonal reflections + hairline edge */}
       <motion.rect style={{ x: sx, y: sy, width: sw, height: sh, rx: sr }} fill="url(#screen-glass)" />
-      <motion.rect style={{ x: sx, y: sy, width: sw, height: sh, rx: sr, fill: tint }} opacity={0.55} />
-      <motion.rect style={{ x: sx, y: sy, width: sw, height: sh, rx: sr }} fill="url(#screen-sheen)" />
+      <motion.rect style={{ x: sx, y: sy, width: sw, height: sh, rx: sr, fill: tint }} opacity={0.25} />
+      <motion.rect style={{ x: sx, y: sy, width: sw, height: sh, rx: sr }} fill="url(#screen-reflect)" />
+      <motion.rect
+        style={{ x: sx, y: sy, width: sw, height: sh, rx: sr }}
+        fill="none"
+        stroke="rgba(255,255,255,0.05)"
+        strokeWidth={1}
+      />
 
-      {/* Notch / Dynamic Island (+ its camera dot) */}
+      {/* Notch / Dynamic Island (+ speaker slit and camera dot) */}
       <motion.g style={{ opacity: no }}>
-        <motion.rect style={{ x: nx, y: ny, width: nw, height: nh, rx: nr }} fill="#050608" />
+        <motion.rect
+          style={{ x: nx, y: ny, width: nw, height: nh, rx: nr }}
+          fill="#050608"
+          stroke="rgba(255,255,255,0.05)"
+          strokeWidth={1}
+        />
         <motion.rect
           style={{ x: slitX, y: slitY, width: slitW, opacity: slitO }}
           height={4.5}
@@ -372,11 +449,11 @@ function FrontView({ progress }: { progress: MV }) {
         strokeWidth={1}
       />
 
-      {/* Home button */}
+      {/* Home button: recessed glass disc */}
       <motion.circle
         style={{ cy: homeCy, r: homeR, opacity: homeO }}
         cx={cx}
-        fill="rgba(255,255,255,0.05)"
+        fill="url(#home-glass)"
         stroke="rgba(255,255,255,0.28)"
         strokeWidth={2}
       />
@@ -417,44 +494,88 @@ export default function MorphingPhone({ progress }: { progress: MV }) {
         aria-label="Front and back of an iPhone evolving across generations as you scroll"
       >
         <defs>
-          <radialGradient id="lens-glass" cx="0.38" cy="0.36" r="0.75">
-            <stop offset="0%" stopColor="#46587a" />
-            <stop offset="55%" stopColor="#1b2740" />
-            <stop offset="100%" stopColor="#0b1120" />
+          {/* Lens optics */}
+          <linearGradient id="lens-rim" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#565c66" />
+            <stop offset="40%" stopColor="#23262c" />
+            <stop offset="72%" stopColor="#0e1013" />
+            <stop offset="100%" stopColor="#3a4047" />
+          </linearGradient>
+          <radialGradient id="lens-glass" cx="0.38" cy="0.36" r="0.8">
+            <stop offset="0%" stopColor="#3b4f79" />
+            <stop offset="40%" stopColor="#1c2a4a" />
+            <stop offset="75%" stopColor="#0c1428" />
+            <stop offset="100%" stopColor="#060a18" />
           </radialGradient>
           <radialGradient id="flash-grad" cx="0.4" cy="0.4" r="0.8">
             <stop offset="0%" stopColor="#fff3cf" />
             <stop offset="70%" stopColor="#e5b95d" />
             <stop offset="100%" stopColor="#b98a35" />
           </radialGradient>
+
+          {/* Body materials */}
           <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.18)" />
-            <stop offset="34%" stopColor="rgba(255,255,255,0.05)" />
+            <stop offset="0%" stopColor="rgba(255,255,255,0.14)" />
+            <stop offset="34%" stopColor="rgba(255,255,255,0.04)" />
             <stop offset="60%" stopColor="rgba(255,255,255,0)" />
           </linearGradient>
-          <linearGradient id="screen-glass" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#171a21" />
-            <stop offset="50%" stopColor="#0d0f14" />
-            <stop offset="100%" stopColor="#0a0c10" />
+          <linearGradient id="body-light" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.16)" />
+            <stop offset="12%" stopColor="rgba(255,255,255,0.05)" />
+            <stop offset="40%" stopColor="rgba(255,255,255,0)" />
+            <stop offset="75%" stopColor="rgba(0,0,0,0.08)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0.22)" />
           </linearGradient>
-          <linearGradient id="screen-sheen" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="rgba(255,255,255,0.11)" />
-            <stop offset="42%" stopColor="rgba(255,255,255,0.02)" />
-            <stop offset="65%" stopColor="rgba(255,255,255,0)" />
-          </linearGradient>
-          {/* Horizontal edge falloff fakes the cylindrical curl of metal/glass */}
+          {/* Horizontal falloff with rim lights fakes the cylindrical curl */}
           <linearGradient id="edge-shade" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stopColor="rgba(0,0,0,0.32)" />
-            <stop offset="10%" stopColor="rgba(0,0,0,0)" />
-            <stop offset="50%" stopColor="rgba(255,255,255,0.06)" />
-            <stop offset="90%" stopColor="rgba(0,0,0,0)" />
-            <stop offset="100%" stopColor="rgba(0,0,0,0.32)" />
+            <stop offset="0%" stopColor="rgba(0,0,0,0.38)" />
+            <stop offset="7%" stopColor="rgba(0,0,0,0.1)" />
+            <stop offset="16%" stopColor="rgba(255,255,255,0.05)" />
+            <stop offset="30%" stopColor="rgba(0,0,0,0)" />
+            <stop offset="50%" stopColor="rgba(255,255,255,0.05)" />
+            <stop offset="70%" stopColor="rgba(0,0,0,0)" />
+            <stop offset="86%" stopColor="rgba(255,255,255,0.04)" />
+            <stop offset="93%" stopColor="rgba(0,0,0,0.12)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0.4)" />
           </linearGradient>
+          {/* Alternating glints along a polished band */}
+          <linearGradient id="band-metal" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.9)" />
+            <stop offset="8%" stopColor="rgba(255,255,255,0.15)" />
+            <stop offset="20%" stopColor="rgba(0,0,0,0.25)" />
+            <stop offset="35%" stopColor="rgba(255,255,255,0.4)" />
+            <stop offset="50%" stopColor="rgba(255,255,255,0.05)" />
+            <stop offset="65%" stopColor="rgba(0,0,0,0.3)" />
+            <stop offset="80%" stopColor="rgba(255,255,255,0.35)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0.75)" />
+          </linearGradient>
+
+          {/* Screen glass */}
+          <linearGradient id="screen-glass" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10141c" />
+            <stop offset="45%" stopColor="#07090e" />
+            <stop offset="100%" stopColor="#04060a" />
+          </linearGradient>
+          <linearGradient id="screen-reflect" x1="0" y1="0" x2="0.85" y2="1">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.07)" />
+            <stop offset="12%" stopColor="rgba(255,255,255,0.05)" />
+            <stop offset="26%" stopColor="rgba(255,255,255,0.01)" />
+            <stop offset="33%" stopColor="rgba(255,255,255,0)" />
+            <stop offset="58%" stopColor="rgba(255,255,255,0)" />
+            <stop offset="66%" stopColor="rgba(255,255,255,0.035)" />
+            <stop offset="74%" stopColor="rgba(255,255,255,0)" />
+          </linearGradient>
+          <radialGradient id="home-glass" cx="0.4" cy="0.35" r="0.9">
+            <stop offset="0%" stopColor="rgba(255,255,255,0.1)" />
+            <stop offset="60%" stopColor="rgba(255,255,255,0.03)" />
+            <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+          </radialGradient>
+
+          <filter id="soft-shadow" x="-40%" y="-25%" width="180%" height="160%">
+            <feDropShadow dx="0" dy="30" stdDeviation="30" floodColor="#000000" floodOpacity="0.6" />
+          </filter>
           <filter id="module-shadow" x="-20%" y="-20%" width="140%" height="140%">
             <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="#000000" floodOpacity="0.28" />
-          </filter>
-          <filter id="soft-shadow" x="-40%" y="-25%" width="180%" height="160%">
-            <feDropShadow dx="0" dy="26" stdDeviation="28" floodColor="#000000" floodOpacity="0.55" />
           </filter>
         </defs>
 
