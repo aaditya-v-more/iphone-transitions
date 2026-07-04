@@ -137,10 +137,16 @@ function BodyLight({
   const hlX = useNum(progress, (p) => bodyLeftAt(p, cx) + p.body.r * 0.7);
   const hlW = useNum(progress, (p) => p.body.w - p.body.r * 1.4);
   const hlY = useNum(progress, (p) => bodyTop(p) + 1.5);
+  /* Cylindrical falloff only as strong as the body is actually curved —
+     full-on for the 3GS's barrel plastic, a whisper on flat glass slabs. */
+  const curveO = useNum(progress, (p) => p.body.curve);
   return (
     <>
       <motion.rect style={{ x: bx, y: by, width: bw, height: bh, rx: br }} fill="url(#body-light)" />
-      <motion.rect style={{ x: bx, y: by, width: bw, height: bh, rx: br }} fill="url(#edge-shade)" />
+      <motion.rect
+        style={{ x: bx, y: by, width: bw, height: bh, rx: br, opacity: curveO }}
+        fill="url(#edge-shade)"
+      />
       <motion.rect style={{ x: hlX, y: hlY, width: hlW }} height={2} rx={1} fill="rgba(255,255,255,0.28)" />
     </>
   );
