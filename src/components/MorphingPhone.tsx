@@ -84,6 +84,26 @@ function useClipSync(bx: MV, by: MV, bw: MV, bh: MV, br: MV) {
   return clipRef;
 }
 
+/** Drive the Apple logo's native SVG transform attribute imperatively:
+    CSS scale on SVG groups resolves transform-origin inconsistently across
+    engines once the SVG is viewBox-scaled, which threw the logo off. The
+    trailing translate centers the 24×24 path on its origin. */
+function useLogoSync(cx: number, y: MV, s: MV) {
+  const ref = useRef<SVGGElement>(null);
+  useEffect(() => {
+    const sync = () => {
+      ref.current?.setAttribute(
+        "transform",
+        `translate(${cx} ${y.get()}) scale(${s.get()}) translate(-12 -12.6)`,
+      );
+    };
+    sync();
+    const subs = [y, s].map((mv) => mv.on("change", sync));
+    return () => subs.forEach((unsub) => unsub());
+  }, [cx, y, s]);
+  return ref;
+}
+
 /** Shared body geometry tracks for one view (front or back). */
 function useBody(progress: MV, cx: number) {
   return {
@@ -189,6 +209,7 @@ function BackView({ progress }: { progress: MV }) {
   const logoY = useNum(progress, (p) => bodyTop(p) + p.body.h * p.logo.yFrac);
   const logoS = useNum(progress, (p) => p.logo.scale);
   const logoC = useCol(progress, (p) => p.logo.color);
+  const logoRef = useLogoSync(cx, logoY, logoS);
   const wordO = useNum(progress, (p) => p.wordmark.o);
   const wordC = useCol(progress, (p) => p.wordmark.color);
   const wordY = useNum(progress, (p) => bodyTop(p) + p.body.h * 0.86);
@@ -273,12 +294,10 @@ function BackView({ progress }: { progress: MV }) {
         <motion.circle style={{ r: snR }} fill="#101318" stroke="rgba(255,255,255,0.12)" strokeWidth={1} />
       </motion.g>
 
-      {/* Apple logo (inner offset centers the 24×24 path on its origin) */}
-      <motion.g style={{ x: cx, y: logoY, scale: logoS }}>
-        <g transform="translate(-12, -12.6)">
-          <motion.path d={APPLE_PATH} style={{ fill: logoC }} />
-        </g>
-      </motion.g>
+      {/* Apple logo (transform driven imperatively — see useLogoSync) */}
+      <g ref={logoRef}>
+        <motion.path d={APPLE_PATH} style={{ fill: logoC }} />
+      </g>
 
       {/* "iPhone" wordmark (retired in 2019) */}
       <motion.text
