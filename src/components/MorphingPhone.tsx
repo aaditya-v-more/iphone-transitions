@@ -152,6 +152,7 @@ function BackView({ progress }: { progress: MV }) {
   const pwH = useNum(progress, (p) => p.power.h);
   const volX = useNum(progress, (p) => bodyLeftAt(p, cx) + p.body.w);
   const muteY = useNum(progress, (p) => bodyTop(p) + p.body.h * 0.155);
+  const muteH = useNum(progress, (p) => p.mute.h);
   const vol1Y = useNum(progress, (p) => bodyTop(p) + p.body.h * 0.225);
   const vol2Y = useNum(progress, (p) => bodyTop(p) + p.body.h * 0.315);
   const ccX = useNum(progress, (p) => bodyLeftAt(p, cx) - 7);
@@ -163,7 +164,7 @@ function BackView({ progress }: { progress: MV }) {
     <g>
       {/* Buttons sit under the body and poke out past its edges */}
       <motion.rect style={{ x: pwX, y: pwY, width: pwW, height: pwH, fill: btnC }} rx={3.5} />
-      <motion.rect style={{ x: volX, y: muteY, fill: btnC }} width={7} height={26} rx={3.5} />
+      <motion.rect style={{ x: volX, y: muteY, height: muteH, fill: btnC }} width={7} rx={3.5} />
       <motion.rect style={{ x: volX, y: vol1Y, fill: btnC }} width={7} height={46} rx={3.5} />
       <motion.rect style={{ x: volX, y: vol2Y, fill: btnC }} width={7} height={46} rx={3.5} />
       <motion.rect style={{ x: ccX, y: ccY, height: ccH, fill: btnC, opacity: ccO }} width={7} rx={3.5} />
@@ -181,6 +182,7 @@ function BackView({ progress }: { progress: MV }) {
         <motion.rect style={{ x: bx, y: antY1, width: bw, fill: antC, opacity: antO }} height={3} />
         <motion.rect style={{ x: bx, y: antY2, width: bw, fill: antC, opacity: antO }} height={3} />
         <motion.rect style={{ x: bx, y: by, width: bw, height: bh, rx: br }} fill="url(#sheen)" />
+        <motion.rect style={{ x: bx, y: by, width: bw, height: bh, rx: br }} fill="url(#edge-shade)" />
       </g>
       <clipPath id="body-clip-back">
         <rect ref={clipRef} />
@@ -197,6 +199,7 @@ function BackView({ progress }: { progress: MV }) {
         style={{ x: mx, y: my, width: mw, height: mh, rx: mr, fill: mc, opacity: mo }}
         stroke="rgba(0,0,0,0.18)"
         strokeWidth={1.5}
+        filter="url(#module-shadow)"
       />
 
       {/* Lenses, flash, sensor */}
@@ -265,6 +268,12 @@ function FrontView({ progress }: { progress: MV }) {
   const dotX = useNum(progress, (p) => cx + notchW(p) / 2 - visH(p) / 2 - 4);
   const dotY = useNum(progress, (p) => visTop(p) + visH(p) / 2);
   const dotR = useNum(progress, (p) => visH(p) * 0.17);
+  /* Speaker slit lives in the notch while it's attached; the island's speaker
+     moved to the top edge, so it fades out during the detach. */
+  const slitX = useNum(progress, (p) => cx - notchW(p) * 0.14);
+  const slitY = useNum(progress, (p) => visTop(p) + 5);
+  const slitW = useNum(progress, (p) => notchW(p) * 0.28);
+  const slitO = useNum(progress, (p) => (p.front.notch.y < 0 ? 1 : 0));
 
   /* Earpiece + selfie camera (pre-2017, above the screen) */
   const earY = useNum(progress, (p) => bodyTop(p) + (p.front.screen.yF * p.body.h) / 2 - 3.5);
@@ -301,6 +310,7 @@ function FrontView({ progress }: { progress: MV }) {
   const pwH = useNum(progress, (p) => p.power.h);
   const volX = useNum(progress, (p) => bodyLeftAt(p, cx) - 7);
   const muteY = useNum(progress, (p) => bodyTop(p) + p.body.h * 0.155);
+  const muteH = useNum(progress, (p) => p.mute.h);
   const vol1Y = useNum(progress, (p) => bodyTop(p) + p.body.h * 0.225);
   const vol2Y = useNum(progress, (p) => bodyTop(p) + p.body.h * 0.315);
   const ccX = useNum(progress, (p) => bodyLeftAt(p, cx) + p.body.w);
@@ -312,7 +322,7 @@ function FrontView({ progress }: { progress: MV }) {
     <g>
       {/* Buttons */}
       <motion.rect style={{ x: pwX, y: pwY, width: pwW, height: pwH, fill: btnC }} rx={3.5} />
-      <motion.rect style={{ x: volX, y: muteY, fill: btnC }} width={7} height={26} rx={3.5} />
+      <motion.rect style={{ x: volX, y: muteY, height: muteH, fill: btnC }} width={7} rx={3.5} />
       <motion.rect style={{ x: volX, y: vol1Y, fill: btnC }} width={7} height={46} rx={3.5} />
       <motion.rect style={{ x: volX, y: vol2Y, fill: btnC }} width={7} height={46} rx={3.5} />
       <motion.rect style={{ x: ccX, y: ccY, height: ccH, fill: btnC, opacity: ccO }} width={7} rx={3.5} />
@@ -322,6 +332,7 @@ function FrontView({ progress }: { progress: MV }) {
         style={{ x: bx, y: by, width: bw, height: bh, rx: br, fill: faceC }}
         filter="url(#soft-shadow)"
       />
+      <motion.rect style={{ x: bx, y: by, width: bw, height: bh, rx: br }} fill="url(#edge-shade)" />
       <motion.rect
         style={{ x: bx, y: by, width: bw, height: bh, rx: br, stroke: frameC, strokeWidth: frameW }}
         fill="none"
@@ -335,6 +346,12 @@ function FrontView({ progress }: { progress: MV }) {
       {/* Notch / Dynamic Island (+ its camera dot) */}
       <motion.g style={{ opacity: no }}>
         <motion.rect style={{ x: nx, y: ny, width: nw, height: nh, rx: nr }} fill="#050608" />
+        <motion.rect
+          style={{ x: slitX, y: slitY, width: slitW, opacity: slitO }}
+          height={4.5}
+          rx={2.25}
+          fill="#161a21"
+        />
         <motion.circle style={{ cx: dotX, cy: dotY, r: dotR }} fill="#131722" />
       </motion.g>
 
@@ -425,6 +442,17 @@ export default function MorphingPhone({ progress }: { progress: MV }) {
             <stop offset="42%" stopColor="rgba(255,255,255,0.02)" />
             <stop offset="65%" stopColor="rgba(255,255,255,0)" />
           </linearGradient>
+          {/* Horizontal edge falloff fakes the cylindrical curl of metal/glass */}
+          <linearGradient id="edge-shade" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stopColor="rgba(0,0,0,0.32)" />
+            <stop offset="10%" stopColor="rgba(0,0,0,0)" />
+            <stop offset="50%" stopColor="rgba(255,255,255,0.06)" />
+            <stop offset="90%" stopColor="rgba(0,0,0,0)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0.32)" />
+          </linearGradient>
+          <filter id="module-shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="4" stdDeviation="5" floodColor="#000000" floodOpacity="0.28" />
+          </filter>
           <filter id="soft-shadow" x="-40%" y="-25%" width="180%" height="160%">
             <feDropShadow dx="0" dy="26" stdDeviation="28" floodColor="#000000" floodOpacity="0.55" />
           </filter>
