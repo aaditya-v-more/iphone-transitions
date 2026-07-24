@@ -25,7 +25,7 @@ export default function App() {
       <Backdrop progress={progress} />
 
       <header className="site-header">
-        <span className="brand">The Shape of the iPhone</span>
+        <h1 className="brand">The Shape of the iPhone</h1>
         <span className="header-range">{N_PHONES} generations · 2007 → 2025</span>
       </header>
 

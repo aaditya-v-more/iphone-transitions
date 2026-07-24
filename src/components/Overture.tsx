@@ -7,7 +7,7 @@ export default function Overture({ progress }: { progress: MotionValue<number> }
   const opacity = useTransform(progress, fade, [1, 0]);
   const y = useTransform(progress, fade, [0, -46]);
   return (
-    <motion.div className="overture" style={{ opacity }} aria-hidden>
+    <motion.div className="overture" style={{ opacity }}>
       <div className="overture-veil" />
       <motion.div className="overture-copy" style={{ y }}>
         <p className="overture-kicker">2007 — 2025</p>

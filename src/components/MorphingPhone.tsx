@@ -516,7 +516,7 @@ export default function MorphingPhone({ progress }: { progress: MV }) {
         className="phone-svg"
         viewBox={`0 0 ${CANVAS.w} ${CANVAS.h}`}
         role="img"
-        aria-label="Front and back of an iPhone evolving across generations as you scroll"
+        aria-label="iPhone — Front and Back views evolving across generations as you scroll"
       >
         <defs>
           {/* Lens optics */}

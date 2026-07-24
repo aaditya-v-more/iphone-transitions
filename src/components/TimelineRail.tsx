@@ -39,7 +39,7 @@ function RailDot({
     <button
       className="rail-dot"
       title={`${p.name} · ${p.year}`}
-      aria-label={`Jump to ${p.name}`}
+      aria-label={`Jump to ${p.name} · ${p.year}`}
       onClick={() => {
         const el = journeyRef.current;
         if (el) window.scrollTo({ top: scrollTargetFor(el, index), behavior: "smooth" });

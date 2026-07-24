@@ -1,0 +1,6 @@
+# The Shape of the iPhone
+
+An interactive visualization of thirteen iPhone generations (2007–2025) drawn as hand-crafted SVG. Each model morphs into the next as you scroll — front and back, with every lens, notch, button, and material migrating across the timeline. Built with React and Motion.
+
+## Quick links
+- The site: [https://shape-of-iphone.vercel.app](https://shape-of-iphone.vercel.app)
