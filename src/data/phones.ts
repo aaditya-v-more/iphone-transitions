@@ -10,10 +10,10 @@
  *
  * Geometry is in canvas px at 4.2 px/mm of real hardware, relative to the
  * body's top-left corner (or as a fraction of body/screen size where marked
- * `F`). Bodies, displays and bezels follow Apple's published dimensions:
- * e.g. the original iPhone is 115 × 61 mm with a 3.5″ 3:2 display (74 × 49.3
- * mm), the X is 143.6 × 70.9 mm with 3.9 mm bezels, the 16 Pro is
- * 149.6 × 71.5 mm with 1.2 mm bezels.
+ * `F`). The catalogue applies source-linked body and display measurements
+ * from the manufacturer reference files. These base drawings supply the
+ * artwork: corner radii, optical details and exact bezel widths are photo
+ * estimates, not manufacturer CAD measurements.
  */
 
 export const CANVAS = { w: 900, h: 780, cy: 390 };
@@ -27,6 +27,12 @@ export interface LensSlot {
   o: number; // opacity
 }
 
+export interface DisplayRectangle {
+  w: number; // full active rectangle in model pixels, before corner/camera cutouts
+  h: number;
+  r: number; // corner radius remains a photographic approximation
+}
+
 export interface PhoneSpec {
   id: string;
   name: string;
@@ -36,6 +42,26 @@ export interface PhoneSpec {
   specline: string;
   accent: string; // era accent (hex, used for static UI bits)
   accentSoft: string; // rgba, used for the animated backdrop glow + screen tint
+  brand?: "apple" | "samsung";
+  finish?: string;
+  material?: string;
+  display?: string;
+  thickness?: number; // millimeters
+  source?: string;
+  availability?: string;
+  fold?: {
+    axis: "book" | "flip";
+    openWidth: number;
+    openHeight: number;
+    closedWidth?: number;
+    closedHeight?: number;
+    closedThickness?: number; // millimeters, glass-to-glass, excluding camera bump
+    innerScreen?: DisplayRectangle;
+    coverScreen?: DisplayRectangle;
+  };
+  sensorShape?: "optical" | "flat" | "fingerprint";
+  sideKeys?: { side: number; yF: number; h: number; o: number }[];
+  extraLens?: LensSlot;
   body: { w: number; h: number; r: number; color: string; curve: number }; // curve 0..1 = how barrel-curved the back is (3GS plastic ≈ 1, flat glass slab ≈ 0.1)
   band: { w: number; color: string }; // steel/titanium rim stroke (0 = none)
   bottomStrip: { hFrac: number; color: string; o: number }; // iPhone 1 plastic / iPhone 5 glass
@@ -53,12 +79,12 @@ export interface PhoneSpec {
   camCtl: { yF: number; h: number; o: number }; // Camera Control (2024+), right edge
   front: {
     face: string; // front glass color
-    frame: { color: string; w: number }; // bezel/rim stroke around the face
+    frame: { color: string; w: number }; // full rim stroke in model pixels; WebGL insets the glass by half per side
     screen: { wF: number; yF: number; hF: number; r: number };
-    notch: { wF: number; h: number; r: number; y: number; o: number }; // wF of screen width; y = gap below screen top (<0 = attached notch bleeding into the bezel, >0 = floating island)
+    notch: { wF: number; h: number; r: number; y: number; o: number; xF?: number }; // wF of screen width; xF offset from center; y = gap below screen top
     home: { r: number; o: number; squareO: number }; // 10.9 mm on every real model → r 23; squareO = printed app-icon square (2007–2012)
     ear: { w: number; o: number }; // earpiece slit, centered in the top bezel
-    fcam: { xF: number; o: number }; // selfie camera dot (arrives 2010)
+    fcam: { xF: number; yF?: number; o: number }; // yF measured from body top; defaults to earpiece row
   };
 }
 
@@ -93,18 +119,18 @@ const l1_6 = { x: 38, y: 40, r: 14 };
 
 export const PHONES: PhoneSpec[] = [
   {
-    /* 115 × 61 mm · 3.5″ 3:2 (74 × 49.3 mm) · black plastic bottom ≈ 27 mm */
+    /* 115 × 61 mm · 3.5″ 3:2 · lower cap proportion matched to Apple's identification photo */
     id: "iphone",
     name: "iPhone",
     year: 2007,
     tagline: "It all started here.",
-    delta: "One aluminum slab. One camera. One button.",
+    delta: "Rounded aluminum. One camera. One Home button.",
     specline: "3.5″ · 2 MP · OS X",
     accent: "#9aa3ad",
     accentSoft: "rgba(154, 163, 173, 0.16)",
     body: { w: 256, h: 483, r: 42, color: "#b9bec4", curve: 0.55 },
     band: { w: 0, color: "#b9bec4" },
-    bottomStrip: { hFrac: 0.235, color: "#17181b", o: 1 },
+    bottomStrip: { hFrac: 0.20, color: "#17181b", o: 1 },
     topStrip: { hFrac: 0.16, color: "#b9bec4", o: 0 },
     antenna: { o: 0, color: "#b9bec4" },
     module: { x: 12, y: 12, w: 66, h: 66, r: 33, color: "#b9bec4", o: 0 },
@@ -229,7 +255,7 @@ export const PHONES: PhoneSpec[] = [
       notch: NOTCH_OFF,
       home: { r: 23, o: 1, squareO: 1 },
       ear: { w: 38, o: 1 },
-      fcam: { xF: 0.42, o: 1 },
+      fcam: { xF: 0.5, yF: 0.039, o: 1 },
     },
   },
   {

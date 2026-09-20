@@ -1,21 +1,29 @@
 {
-  "name": "iphone-transitions",
-  "private": true,
+  "name": "shape-phone-archive",
   "version": "0.1.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test:catalogue": "node scripts/test-catalogue.mjs",
+    "test:fold-geometry": "node scripts/test-fold-geometry.mjs",
+    "test:flip-slab": "node scripts/test-flip-slab.mjs",
+    "test:manufacturer-specs": "node scripts/test-manufacturer-specs.mjs",
+    "test:body-profiles": "node scripts/test-body-profiles.mjs"
   },
   "dependencies": {
     "motion": "^12.15.0",
     "react": "^19.1.0",
-    "react-dom": "^19.1.0"
+    "react-dom": "^19.1.0",
+    "three": "^0.185.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.61.1",
     "@types/react": "^19.1.0",
     "@types/react-dom": "^19.1.0",
+    "@types/three": "^0.185.4",
     "@vitejs/plugin-react": "^4.5.0",
     "typescript": "~5.8.3",
     "vite": "^6.3.5"

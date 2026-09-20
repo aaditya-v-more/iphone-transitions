@@ -2,3 +2,11 @@ node_modules
 dist
 *.local
 .DS_Store
+
+# Generated browser checks and local review captures
+.playwright-cli/
+test-results/
+playwright-report/
+review/*.png
+review/report.html
+review/report.json
