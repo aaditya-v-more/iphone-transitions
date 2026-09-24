@@ -1,25 +1,62 @@
-# Shape — The Phone Design Archive
+# Shape: The Phone Design Archive
 
-A minimal, local 3D archive of iPhone and Samsung Galaxy design. Formerly iPhone Transitions; the project and package are now **Shape** (`shape-phone-archive`). Scroll through 20 iPhone and 17 Galaxy milestones, switch brands, inspect either side, and fold or unfold supported models.
+A scrollable 3D journey through iPhone and Samsung Galaxy design. Phone bodies, cameras, screens and materials transform as you move through the timeline. Rotate the models, inspect both sides, and explore folding displays.
+
+**[Explore the live archive](https://studio.aadityamore.com/shape/)** · **[More Studio experiments](https://studio.aadityamore.com/)**
+
+[![Apple and Samsung models transforming and rotating side by side](docs/shape-demo.gif)](https://studio.aadityamore.com/shape/)
+
+The demo shows both sides of each phone. Regular sections play at twice the original speed; folding movements retain their original timing. Apple and Samsung stay synchronized throughout.
+
+## Inspiration
+
+I had this idea for a while and finally built it. The motion was inspired by **[Wonderful Things (Apple Event Intro Video, Sept. 2019)](https://www.youtube.com/watch?v=a4PraWW82_A)**.
+
+## Explore
+
+- 20 iPhone and 17 Samsung Galaxy design milestones.
+- Continuous transformations between phone bodies, displays, cameras and finishes.
+- Front, back and both-sides views, with drag rotation and a rotation button.
+- Book-style and clamshell folding animations, including reversible transitions.
+- A timeline, model picker, keyboard navigation and a guided journey.
+- Responsive layouts, touch controls, reduced-motion support and an SVG fallback when WebGL is unavailable.
 
 ## Run locally
 
+Requires Node.js 22 or newer. Production uses Node.js 24.
+
 ```sh
-npm install
+npm ci
 npm run dev -- --host 127.0.0.1 --port 5173
 ```
 
-Open http://127.0.0.1:5173/. This project has not been deployed as part of this update.
+Open <http://127.0.0.1:5173/>.
+
+```sh
+npm run build
+npm run preview
+```
 
 ## Controls
 
-- Scroll, use the timeline, or press Left/Right to change models. Home/End jump to the first/last model.
-- **All models** opens the model picker. **Apple / Samsung** starts the selected brand's timeline.
-- Drag to rotate on desktop, or use the rotation button on any device.
-- **Front / Back / Both sides** changes the view. **Fold / Unfold** operates the folding display.
-- Book folds take shape before opening. Clamshell transitions overlap unfolding and reshaping, preserving two aligned panels and a continuous image as the hinge seam disappears. Scrolling backward retraces the movement.
-- Both views share the same hinge position. Fold controls remember each model's pose while you explore its brand, and clamshells have a dedicated outer display.
-- The play button starts a guided journey; scrolling or touching the screen stops it.
+| Action | Control |
+| --- | --- |
+| Change model | Scroll, timeline, Left/Right arrow keys |
+| First or last model | Home/End |
+| Pick a model | All models |
+| Switch collection | Apple / Samsung |
+| Inspect the hardware | Drag on desktop or use the rotation button |
+| Choose a view | Front / Back / Both sides |
+| Move the hinge | Fold / Unfold on supported models |
+| Guided tour | Play; scroll or touch to stop |
+
+Fold controls remember each model's pose while you explore its brand. Scrolling backward retraces the transformations.
+
+## Built with
+
+**React + TypeScript + Motion + Three.js + Vite.**
+
+A persistent Three.js scene morphs fixed-topology meshes instead of swapping whole scenes. Screens and wallpapers are generated locally. The viewer loads separately from the interface, limits pixel density, pauses when hidden and disposes its resources on unmount. There are no runtime asset downloads, analytics or remote APIs.
 
 ## Validation
 
@@ -30,38 +67,51 @@ npm run test:fold-geometry
 npm run test:flip-slab
 npm run test:manufacturer-specs
 npm run test:body-profiles
+npm run test:hinge-controls
 ```
 
-The catalogue checks cover model metadata, camera bounds, chronological ordering, navigation hold points, continuous interpolation, and the requested current models. Browser checks cover desktop/mobile layout, brand switching, model selection, display modes, folding, and dialog navigation. Earlier review artifacts and the original SVG-focused test suite are retained in the working directory; their selectors describe the previous interface.
+These checks cover catalogue consistency, rendered dimensions, camera placement, folding geometry, hinge clearance, rotation framing, continuous transitions and reverse paths. The development-only `/review/transition-lab.html` provides paused transition positions for visual inspection.
 
-## Implementation
+## Hosting
 
-React + Motion drive scroll and the UI. Three.js renders a single persistent scene. Rounded meshes keep a fixed topology while dimensions and materials interpolate; camera optics, metal edges, ports, and folding panels are modeled geometry. Wallpapers are generated locally. There are no runtime asset downloads, analytics, or remote APIs.
+The archive is independently deployed on Vercel from this repository's `main` branch. The Studio hub routes its public `/shape/` path to that deployment.
 
-The scene is loaded separately from the interface, caps pixel density, pauses when the tab is hidden, and disposes its resources on unmount. Reduced-motion preferences disable inertia and idle movement. An SVG illustration keeps navigation usable if WebGL is unavailable.
+```sh
+npm run build:vercel
+```
 
-The fold geometry checks exercise actual Three.js meshes at intermediate hinge angles, checking lid direction, closed-screen clearance, attached cameras, continuous wallpaper alignment, and the closed silhouette when changing hinge axes.
+This builds `vercel-dist/shape/`, including namespaced assets, canonical metadata and a sitemap. The upstream root redirects to Studio; the namespaced route stays accessible to Studio's rewrite. Deployment configuration is in `vercel.json`.
 
-The local development page at `/review/transition-lab.html` pauses the production scene at selected transition positions for visual review. It is not part of the production entry or the public viewer. Flip/slab transitions keep the cover display within its panel, turn it off while unfolding, fade its black mask into the rear finish, and retain the selfie cutout and attached controls throughout. Their easing has continuous acceleration at stage boundaries, and the forward/reverse paths match.
+## Recording the demo
 
-`test:flip-slab` checks the actual half-panel meshes, the shader's texture mapping, attachment trajectories, reverse paths, and the handoff to each held device. It covers Flip7 and Flip8 against S26 and S26 Ultra with closed, partly open, and open starting poses.
+With the dev server running on port 5173, and FFmpeg plus Playwright's Chromium installed:
 
-`test:manufacturer-specs` checks the Apple reference coverage, actual rendered body/display dimensions, physical rear-camera count and absence of modern front-camera/flash hardware on the original and 3GS. The fold suite also checks Duo against its own Apple dimensions and independent display rectangles.
+```sh
+npx playwright install chromium
+node scripts/record-reddit.mjs
+```
 
-`test:body-profiles` checks the rendered historical enclosures, their attachments, and curved-to-flat morphs. Enclosure profiles preserve the original iPhone's rounded aluminum back, the more bulbous 3GS, the flatter iPhone 4/5, and the rounded 6–11 families. Rear caps are shaded on the same surface rather than attached as floating rectangles. The original and 3GS have a top sleep/wake key, a left volume rocker and silent switch, and a circular Home button with an outlined square. The iPhone 4/5 have round volume keys; iPhone 5 has the narrower Lightning opening and its selfie camera above the earpiece. Supported modern iPhones have their separate Camera Control; 17e does not inherit it.
+The script captures matching 960 × 1080, 30 fps Apple and Samsung clips to `recordings/reddit-both-sides/`. It uses the existing scroll and pointer controls, a shared timing map, and the Both sides view. It keeps labels visible while stepping the browser clock. Join the clips with FFmpeg:
 
-The selected curved-screen Galaxy generations have flat central glass and curved long edges on both the display mask and illuminated screen. Glass, body, and rear-profile parameters interpolate together. Exact curve radii remain photographic estimates, not additional manufacturer measurements.
+```sh
+ffmpeg -i recordings/reddit-both-sides/apple-scroll-rotate.mp4 \
+  -i recordings/reddit-both-sides/samsung-scroll-rotate.mp4 \
+  -filter_complex '[0:v][1:v]hstack=inputs=2[v]' -map '[v]' \
+  -an -c:v libx264 -crf 18 -pix_fmt yuv420p -movflags +faststart \
+  recordings/reddit-both-sides/apple-vs-samsung.mp4
+```
 
-## Photo reference and display materials
+The GIF above is a smaller rendition of the final 38.2-second side-by-side recording. Generated full-resolution captures are excluded from Git.
 
-The iPhone Air refinement uses [Apple's front/edge photograph](https://www.apple.com/v/iphone-air/i/images/overview/camera/hero_camera__b3wz3l2dh0wi_large.jpg), [rear camera photograph](https://www.apple.com/v/iphone-air/i/images/overview/camera/camera__gl56mvovq6qi_large.jpg), and [technical specifications](https://www.apple.com/iphone-air/specs/), reviewed on 19 September 2026. Its body uses 74.7 × 156.2 × 5.64 mm. The active display rectangle is derived from 1260 × 2736 pixels at 460 ppi; the resulting inset includes the frame and black border. Corner, camera-plateau, and optical details remain illustrative photo matches, not CAD measurements. Reference photographs are not bundled or fetched at runtime.
+## References and limitations
 
-Black glass and the metallic rim have independent materials. Environment textures are explicitly bound to each material because Three.js otherwise replaces their reflection intensity with the scene-wide setting. This removes the gray reflection wash from the display border without flattening the metal, camera lenses, or model transitions. The mesh checks also cover Air's display proportions and ownership of the shared environment texture.
+The archive represents selected design milestones, not every released SKU. Models, finishes and wallpapers are original, simplified reconstructions, not manufacturer CAD assets. Fine geometry and some visual proportions are illustrative. Catalogue entries include announced designs; see each model's references and availability notes.
 
-## Product data
+- [Apple reference audit](review/apple-reference.md)
+- [Samsung reference audit](review/samsung-reference.md)
+- [Hinge and control review](review/hinge-controls.md)
+- [Detailed implementation notes](docs/implementation.md)
 
-The [Apple reference audit](review/apple-reference.md) records source-linked body and display inputs for all twenty iPhone entries, including independent folded/open dimensions and display rectangles for Duo. The [Samsung reference audit](review/samsung-reference.md) records sourced dimensions for sixteen Galaxy models. The original Galaxy S retains approximate body dimensions pending a retrievable primary specification source. Exact curvature, corner radii and optics remain photo-based artwork; these limits are documented without adding clutter to the viewer.
+This is an independent project, unaffiliated with Apple or Samsung. Product names and trademarks belong to their respective owners.
 
-The catalogue represents selected design milestones, not every released SKU. Models are original, simplified reconstructions rather than manufacturer CAD assets; finishes, subtle geometry, and screen artwork are illustrative.
-
-Current lineups were checked on 19 September 2026 against [Apple's iPhone lineup](https://www.apple.com/iphone/), [iPhone 18 Pro specifications](https://www.apple.com/iphone-18-pro/specs/), [iPhone Duo specifications](https://www.apple.com/iphone-duo/specs/), [Samsung's S26 announcement](https://news.samsung.com/sg/samsung-unveils-galaxy-s26-series-the-most-intuitive-galaxy-ai-phone-yet), and [Samsung's Fold8 / Flip8 announcement](https://news.samsung.com/global/samsung-galaxy-z-fold8-ultra-fold8-and-flip8foldables-perfected-for-every-way-of-living). The iPhone Duo entry is marked as announced, with availability from October 23, 2026.
+Made by [Aaditya More](https://aadityamore.com/) · [LinkedIn](https://www.linkedin.com/in/aadityavmore/) · [GitHub](https://github.com/aaditya-v-more)

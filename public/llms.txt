@@ -2,4 +2,4 @@
 
 An independent interactive 3D archive of 20 iPhone and 17 Samsung Galaxy design milestones through 2026. Phone bodies, cameras, displays, and materials morph continuously with scroll. Brand switching, view controls, rotation, and folding displays are supported. Built with React, Motion, and Three.js.
 
-The product models are simplified original reconstructions. iPhone Duo is announced, with availability from October 23, 2026. Manufacturer references are linked inside the archive's About dialog and in the README. This update is available locally only.
+The product models are simplified original reconstructions. iPhone Duo is announced, with availability from October 23, 2026. Manufacturer references are linked inside the archive's About dialog and in the README. Public archive: https://studio.aadityamore.com/shape/

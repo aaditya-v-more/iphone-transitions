@@ -1,2 +1,3 @@
 User-agent: *
 Allow: /
+Sitemap: https://studio.aadityamore.com/shape/sitemap.xml

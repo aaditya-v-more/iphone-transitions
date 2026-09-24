@@ -2,10 +2,13 @@ import * as THREE from "three";
 import type { PhoneSpec } from "../data/phones";
 import { hingePose } from "./morph";
 import { mixBodyProfile, rearSurfaceDrop, frontSurfaceDrop, type BodyProfile } from "./body-profile";
+import { HingeSpineGeometry } from "./hinge-spine";
 
 const TAU = Math.PI * 2;
 const SEGMENTS = 12;
 const RING = 4 * (SEGMENTS + 1);
+const SIDE_KEY_ROTATION = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, Math.PI / 2, 0));
+const TOP_VOLUME_ROTATION = new THREE.Quaternion().setFromEuler(new THREE.Euler(-Math.PI / 2, 0, -Math.PI / 2));
 interface SurfaceProfile {
   profile: BodyProfile;
   w: number;
@@ -571,6 +574,7 @@ export class PhoneModel {
   private port = panel(this.root, material("#020304", 0.1, 0.4));
   private antennae = Array.from({ length: 4 }, () => panel(this.root, material("#aaa", 0.15, 0.7)));
   private wingPivot = new THREE.Group();
+  private wingVolumeKeys = Array.from({ length: 2 }, () => panel(this.wingPivot, material("#777", 0.8, 0.26)));
   private wingFrame = panel(this.wingPivot, this.frame.material, "shell");
   private wingBack = panel(this.wingPivot, this.back.material, "shell");
   private wingFace = panel(this.wingPivot, this.face.material, "glass");
@@ -581,7 +585,7 @@ export class PhoneModel {
   private coverScreen = panel(this.wingPivot, this.coverShader.mat);
   private coverFace = panel(this.wingPivot, glassMaterial("#050608"));
   private coverNotch = panel(this.wingPivot, this.notch.material);
-  private hinge = panel(this.root, material("#a3a7ac", 0.85, 0.2));
+  private hinge = new THREE.Mesh(new HingeSpineGeometry(), material("#a3a7ac", 0.85, 0.3));
   private crease = panel(
     this.root,
     new THREE.MeshStandardMaterial({
@@ -641,6 +645,9 @@ export class PhoneModel {
     );
     this.rear.add(this.logo);
     this.root.add(this.wingPivot);
+    this.root.add(this.hinge);
+    this.hinge.material.transparent = true;
+    this.hinge.material.side = THREE.DoubleSide;
     this.root.add(this.keyRig);
     for (let i = 0; i < 12; i++) {
       const hole = new THREE.Mesh(
@@ -1019,8 +1026,11 @@ export class PhoneModel {
     col(this.backFinish.shellTopColor.value, (v) => v.topStrip.color);
     col(this.backFinish.shellBottomColor.value, (v) => v.bottomStrip.color);
     poseAttachment(this.keyRig, attachmentFlip, h / 2 + pose.shift, pose.lift, pose.angle);
+    const duoControls = num((v) => Number(v.id === "iphone-duo"));
     this.keys.forEach((key, i) => {
       const keySlot = (v: PhoneSpec) => {
+        if (v.id === "iphone-duo") return { side: i === 0 ? 1 : -1,
+          yF: i === 0 ? 0.32 : 0, h: i === 0 ? 48 : 28, o: Number(i < 3) };
         if (v.sideKeys) return v.sideKeys[i] ?? { side: 1, yF: 0.3, h: 0, o: 0 };
         if (v.brand === "apple" && v.year <= 2012) {
           const rocker = v.year <= 2009;
@@ -1033,30 +1043,37 @@ export class PhoneModel {
       };
       const visibility = num((v) => keySlot(v).o);
       const circularVolume = num((v) => Number(v.brand === "apple" && (v.id === "iphone-4" || v.id === "iphone-5") && (i === 1 || i === 3)));
+      const earlyRail = num((v) => Number(v.brand === "apple" && v.year <= 2009));
+      const faceWidth = THREE.MathUtils.lerp(d * THREE.MathUtils.lerp(0.22, i === 0 ? 0.42 : 0.22, duoControls), 0.20, circularVolume);
+      const keyLength = num((v) => keySlot(v).h) / 100;
+      const topVolume = i === 1 || i === 2 ? duoControls : 0;
       size(
         key,
-        THREE.MathUtils.lerp(0.045, 0.20, circularVolume),
-        num((v) => keySlot(v).h) / 100,
-        THREE.MathUtils.lerp(d * THREE.MathUtils.lerp(0.55, 0.22, profile.weight), 0.045, circularVolume),
-        THREE.MathUtils.lerp(0.02, 0.10, circularVolume),
-        num((v) => keySlot(v).side) * (w / 2 + 0.015),
-        baseH * (0.5 - num((v) => keySlot(v).yF)),
-        d * 0.21 * profile.weight,
+        faceWidth,
+        keyLength,
+        0.045,
+        Math.min(faceWidth, keyLength) / 2,
+        THREE.MathUtils.lerp(num((v) => keySlot(v).side) * (w / 2 + 0.015), w * (0.02 + (i - 1) * 0.12), topVolume),
+        THREE.MathUtils.lerp(baseH * (0.5 - num((v) => keySlot(v).yF)), h / 2 + 0.009, topVolume),
+        d * 0.21 * earlyRail,
       );
       col(key.material.color, (v) => v.band.color);
-      key.rotation.y = circularVolume * Math.PI / 2;
+      // Round the Y/Z contact face seen from the edge, not the narrow X/Y extrusion.
+      key.quaternion.copy(SIDE_KEY_ROTATION).slerp(TOP_VOLUME_ROTATION, topVolume);
       key.visible = visibility > 0.01;
       key.scale.setScalar(Math.max(0.001, visibility));
     });
     const topSleep = num((v) => Number(v.brand === "apple" && v.year <= 2012));
-    size(this.topKey, num((v) => v.power.w) / 100, 0.038, d * 0.22, 0.018,
+    size(this.topKey, num((v) => v.power.w) / 100, d * 0.22, 0.038, d * 0.11,
       num((v) => v.power.x + v.power.w / 2 - v.body.w / 2) / 100,
       h / 2 + 0.009, d * 0.21 * profile.weight);
+    this.topKey.rotation.x = Math.PI / 2;
     this.topKey.scale.setScalar(Math.max(0.001, topSleep));
     this.topKey.visible = topSleep > 0;
     const cameraControlO = num((v) => v.brand === "apple" ? v.camCtl.o : 0);
-    size(this.cameraControl, 0.018, num((v) => v.camCtl.h) / 100, d * 0.4, 0.009,
+    size(this.cameraControl, d * 0.28, num((v) => v.camCtl.h) / 100, 0.018, d * 0.14,
       w / 2 + 0.004, baseH * (0.5 - num((v) => v.camCtl.yF)), 0);
+    this.cameraControl.rotation.y = Math.PI / 2;
     col(this.cameraControl.material.color, (v) => v.band.color);
     this.cameraControl.material.color.multiplyScalar(0.65);
     this.cameraControl.scale.setScalar(Math.max(0.001, cameraControlO));
@@ -1085,13 +1102,28 @@ export class PhoneModel {
 
     // A physical second panel rotates about the hinge, instead of stretching a flat image.
     this.wingPivot.visible = flipSlab || foldWeight > 0.01;
-    this.hinge.visible = foldWeight > 0.01;
+    this.hinge.visible = foldWeight > 0;
     this.crease.visible = foldWeight > 0.01 && open > 0.5;
-    this.hinge.scale.setScalar(flipSlab ? Math.max(0.001, flip) : 1);
+    const changingFoldAxis = !!a.fold && !!b.fold && a.fold.axis !== b.fold.axis;
+    const spineWeight = THREE.MathUtils.smootherstep(foldWeight, 0, 1)
+      * (changingFoldAxis ? THREE.MathUtils.smootherstep(Math.abs(book - flip), 0, 1) : 1);
+    this.hinge.scale.setScalar(spineWeight);
+    this.hinge.material.opacity = spineWeight;
+    this.hinge.material.depthWrite = spineWeight === 1;
     this.crease.material.opacity = 0.16 * (flipSlab ? flip : 1);
     this.wingPivot.scale.set(1, 1, flipSlab ? 1 : Math.max(0.001, foldWeight));
     const wingX = isFlip ? 0 : -w / 2;
     const wingY = isFlip ? wingHeight / 2 : 0;
+    // Duo repeats its volume pair on the other leaf's top rail. Keep the pair
+    // in that leaf's local coordinates, including when the device is closed.
+    this.wingVolumeKeys.forEach((key, i) => {
+      size(key, d * 0.22, 0.28, 0.045, d * 0.11,
+        wingX - w * (0.02 + (1 - i) * 0.12), wingY + wingHeight / 2 + 0.009, 0);
+      key.quaternion.copy(TOP_VOLUME_ROTATION);
+      key.scale.setScalar(duoControls);
+      key.visible = duoControls > 0;
+      col(key.material.color, (v) => v.band.color);
+    });
     this.wingPivot.position.set(
       isFlip ? 0 : -w / 2 - pose.shift,
       isFlip ? h / 2 + pose.shift : 0,
@@ -1181,18 +1213,11 @@ export class PhoneModel {
       if (fold.axis === "flip" && fold.closedHeight) return 2 * (fold.closedHeight - fold.openHeight / 2) / 100;
       return 0.055;
     });
-    // The hinge spine accounts for the difference between half the unfolded body
-    // and the manufacturer's folded dimensions. Its depth follows the closing stack.
-    size(
-      this.hinge,
-      isFlip ? w * 0.92 : hingeOverhang,
-      isFlip ? hingeOverhang : h * 0.95,
-      THREE.MathUtils.lerp(d * 0.8, 2 * d + clearance, measuredFold * (1 - open)),
-      hingeOverhang / 2,
-      isFlip ? 0 : -w / 2,
-      isFlip ? h / 2 : 0,
-      pose.lift * measuredFold / 2,
-    );
+    // Join the exterior rear edges and retract beneath the seam as the device
+    // opens. A centered rectangular block would cut across the display wedge.
+    this.hinge.geometry.reshape(isFlip ? w * 0.92 : h * 0.95,
+      d, clearance, pose.angle, hingeOverhang, foldWeight, isFlip);
+    this.hinge.position.set(isFlip ? 0 : -w / 2, isFlip ? h / 2 : 0, 0);
     col(this.hinge.material.color, (v) => v.band.color);
     const creaseWidth = THREE.MathUtils.lerp(isFlip ? 0.025 : 0.055, 0.012, measuredFold);
     size(

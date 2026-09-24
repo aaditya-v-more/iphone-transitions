@@ -1,5 +1,8 @@
 node_modules
 dist
+vercel-dist
+.vercel
+recordings/
 *.local
 .DS_Store
 

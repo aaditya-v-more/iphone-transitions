@@ -46,10 +46,10 @@ export function foldChoreography(
     };
 
   if (from.fold && !to.fold) {
-    const departingOpen = from.fold.axis === "flip" ? 1 : 0;
+    // Exact reverse of slab → book, including a manually held hinge angle.
     return {
-      shapeMix: phase(0.42, 1, mix),
-      hingeOpen: fromOpen + (departingOpen - fromOpen) * phase(0, 0.42, mix),
+      shapeMix: phase(0.54, 1, mix),
+      hingeOpen: fromOpen * (1 - phase(0, 0.54, mix)),
     };
   }
 

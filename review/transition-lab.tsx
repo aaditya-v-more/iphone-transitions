@@ -18,10 +18,14 @@ const pairs = [
   ["iphone-11-pro", "iphone-12"],
   ["galaxy-s6-edge", "galaxy-s8"],
   ["galaxy-s22-ultra", "galaxy-s24-ultra"],
+  ["iphone-18-pro", "iphone-duo"],
+  ["iphone-18-pro-max", "iphone-duo"],
+  ["iphone-duo", "iphone-18-pro"],
 ];
 function Review() {
   const [pair, setPair] = useState(0), [position, setPosition] = useState(0);
   const [rotation, setRotation] = useState(0), [view, setView] = useState<View>("pair");
+  const [foldOpen, setFoldOpen] = useState(true);
   const phones = useMemo(() => pairs[pair].map(id => Object.values(CATALOGUES).flat().find(p => p.id === id)!), [pair]);
   const progress = useMotionValue(.35);
   const update = (value: number) => {
@@ -44,9 +48,11 @@ function Review() {
       <label>View <select value={view} onChange={e => setView(e.target.value as View)}>
         <option value="pair">Both sides</option><option value="front">Front</option><option value="back">Back</option>
       </select></label>
+      <label><input type="checkbox" checked={foldOpen} onChange={e => setFoldOpen(e.target.checked)} /> Open book fold</label>
     </div>
     <PhoneScene phones={phones} phone={phone} progress={progress} view={view} open={phone.fold?.axis !== "flip"}
-      foldStates={{}} reducedMotion={true} rotation={rotation}/>
+      foldStates={Object.fromEntries(phones.filter(p => p.fold?.axis === "book").map(p => [p.id, foldOpen]))}
+      reducedMotion={true} rotation={rotation}/>
   </main>;
 }
 const reviewRoot = createRoot(document.getElementById("root")!);

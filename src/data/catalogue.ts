@@ -205,7 +205,7 @@ const duo: PhoneSpec = {
     screen: { wF: 0.94, yF: 0.02, hF: 0.96, r: 27 },
     notch: { wF: 0.055, h: 16, r: 8, y: 10, o: 1 },
   },
-  camCtl: { ...pro.camCtl, o: 0 },
+  camCtl: { ...pro.camCtl, o: 1 },
   fold: { axis: "book", openWidth: 691, openHeight: 495 },
 };
 

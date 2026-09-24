@@ -49,7 +49,7 @@ const { outputFiles } = await build({
       check(foldChoreography(slab, book, .46).shapeMix === 1, 'Book body forms before it opens');
       check(foldChoreography(slab, book, .46).hingeOpen === 0, 'Book hinge remains closed during reshaping');
       check(foldChoreography(slab, book, .75).hingeOpen > 0 && foldChoreography(slab, book, .75).hingeOpen < 1, 'Book unfolds through an intermediate angle');
-      check(foldChoreography(book, slab, .42).hingeOpen === 0 && foldChoreography(book, slab, .42).shapeMix === 0, 'Book closes before it becomes a slab');
+      check(foldChoreography(book, slab, .54).hingeOpen === 0 && foldChoreography(book, slab, .54).shapeMix === 0, 'Book closes before it becomes a slab');
       check(foldChoreography(slab, flip, .34).shapeMix > 0 && foldChoreography(slab, flip, .34).shapeMix < 1
         && foldChoreography(slab, flip, .34).hingeOpen === 1, 'Clamshell starts reshaping at full height');
       check(foldChoreography(slab, flip, .75).hingeOpen > 0 && foldChoreography(slab, flip, .75).hingeOpen < 1, 'Clamshell physically folds');

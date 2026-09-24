@@ -435,6 +435,7 @@ export default function App() {
           announced, with availability from October 23, 2026.
         </p>
         <div className="source-links">
+          <a href="https://studio.aadityamore.com/">Back to Studio ↗</a>
           <a href="https://www.apple.com/iphone/" target="_blank" rel="noreferrer">
             Apple lineup ↗
           </a>
