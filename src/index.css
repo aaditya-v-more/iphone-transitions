@@ -667,6 +667,22 @@ svg {
     display: none;
   }
 }
+@media (max-height: 480px) {
+  :root {
+    --header: 52px;
+    --footer: 48px;
+  }
+  .stage {
+    grid-template-rows: 56px minmax(0, 1fr);
+    min-height: 0;
+  }
+  .device-viewer {
+    min-height: 0;
+  }
+  .model-heading h1 {
+    font-size: 24px;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
