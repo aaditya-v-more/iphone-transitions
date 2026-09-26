@@ -426,8 +426,9 @@ export default function App() {
           either side.
         </p>
         <p>
-          Use the timeline or your left and right arrow keys to move between models. Drag a phone to
-          rotate it. On folding models, use Fold and Unfold to explore the hinge.
+          Use the timeline or your left and right arrow keys to move between models. Swipe or drag
+          sideways on a phone to rotate it; swipe vertically to scroll through models. On folding
+          models, use Fold and Unfold to explore the hinge.
         </p>
         <p className="source-note">
           The 3D models and wallpapers are original, simplified reconstructions. Product names and

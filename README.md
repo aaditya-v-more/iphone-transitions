@@ -45,12 +45,12 @@ npm run preview
 | First or last model | Home/End |
 | Pick a model | All models |
 | Switch collection | Apple / Samsung |
-| Inspect the hardware | Drag on desktop or use the rotation button |
+| Inspect the hardware | Swipe or drag sideways on a phone, or use the rotation button |
 | Choose a view | Front / Back / Both sides |
 | Move the hinge | Fold / Unfold on supported models |
 | Guided tour | Play; scroll or touch to stop |
 
-Fold controls remember each model's pose while you explore its brand. Scrolling backward retraces the transformations.
+On mobile, vertical swipes still scroll through models and pinch gestures retain browser zoom. Fold controls remember each model's pose while you explore its brand. Scrolling backward retraces the transformations.
 
 ## Built with
 
@@ -68,6 +68,7 @@ npm run test:flip-slab
 npm run test:manufacturer-specs
 npm run test:body-profiles
 npm run test:hinge-controls
+npm run test:phone-drag
 ```
 
 These checks cover catalogue consistency, rendered dimensions, camera placement, folding geometry, hinge clearance, rotation framing, continuous transitions and reverse paths. The development-only `/review/transition-lab.html` provides paused transition positions for visual inspection.

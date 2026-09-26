@@ -11,6 +11,7 @@ import {
 } from "../lib/phone3d";
 import { defaultFoldOpen, foldChoreography, sampleJourney } from "../lib/morph";
 import { PhoneLayout } from "../lib/phone-layout";
+import { bindPhoneDrag } from "../lib/phone-drag";
 import type { PhoneSpec } from "../data/phones";
 import type { View } from "../data/catalogue";
 
@@ -110,8 +111,6 @@ export default function PhoneScene(props: Props) {
     resize();
     let pointerX = 0,
       pointerY = 0,
-      drag = false,
-      startX = 0,
       dragAngle = 0,
       angle = 0;
     let focusFront = 1,
@@ -127,35 +126,9 @@ export default function PhoneScene(props: Props) {
     let previousHinge = defaultFoldOpen(previousSpec),
       switchFromOpen = previousHinge;
     const hingeValues = new Map<string, number>();
-    const down = (e: PointerEvent) => {
-      if (e.pointerType === "touch") return;
-      drag = true;
-      startX = e.clientX;
-      element.setPointerCapture(e.pointerId);
-      element.classList.add("is-dragging");
-    };
-    const move = (e: PointerEvent) => {
-      const rect = element.getBoundingClientRect();
-      pointerX = (e.clientX - rect.left) / rect.width - 0.5;
-      pointerY = (e.clientY - rect.top) / rect.height - 0.5;
-      if (drag) {
-        dragAngle += (e.clientX - startX) * 0.008;
-        startX = e.clientX;
-      }
-    };
-    const up = () => {
-      drag = false;
-      element.classList.remove("is-dragging");
-    };
-    const leave = () => {
-      pointerX = 0;
-      pointerY = 0;
-    };
-    element.addEventListener("pointerdown", down);
-    element.addEventListener("pointermove", move);
-    element.addEventListener("pointerup", up);
-    element.addEventListener("pointercancel", up);
-    element.addEventListener("pointerleave", leave);
+    const unbindDrag = bindPhoneDrag(element,
+      (pixels) => { dragAngle += pixels * 0.008; },
+      (x, y) => { pointerX = x; pointerY = y; });
     const contextLost = (event: Event) => {
       event.preventDefault();
       setFallback(true);
@@ -240,11 +213,7 @@ export default function PhoneScene(props: Props) {
       cancelAnimationFrame(raf);
       observer.disconnect();
       document.removeEventListener("visibilitychange", visibility);
-      element.removeEventListener("pointerdown", down);
-      element.removeEventListener("pointermove", move);
-      element.removeEventListener("pointerup", up);
-      element.removeEventListener("pointercancel", up);
-      element.removeEventListener("pointerleave", leave);
+      unbindDrag();
       renderer.domElement.removeEventListener("webglcontextlost", contextLost);
       disposeScene(scene);
       textures.forEach((texture) => texture.dispose());
@@ -271,7 +240,7 @@ export default function PhoneScene(props: Props) {
       <span className="viewer-help">
         {fallback
           ? "Device illustration · 3D unavailable on this browser"
-          : "Drag to explore the details"}
+          : "Swipe or drag sideways to rotate"}
       </span>
     </div>
   );

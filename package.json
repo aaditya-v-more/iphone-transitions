@@ -13,7 +13,8 @@
     "test:flip-slab": "node scripts/test-flip-slab.mjs",
     "test:manufacturer-specs": "node scripts/test-manufacturer-specs.mjs",
     "test:body-profiles": "node scripts/test-body-profiles.mjs",
-    "test:hinge-controls": "node scripts/test-hinge-controls.mjs"
+    "test:hinge-controls": "node scripts/test-hinge-controls.mjs",
+    "test:phone-drag": "node scripts/test-phone-drag.mjs"
   },
   "dependencies": {
     "motion": "^12.15.0",
